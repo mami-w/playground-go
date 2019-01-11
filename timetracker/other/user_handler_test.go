@@ -1,6 +1,7 @@
 package other
 
 import (
+	"github.com/mami-w/playground-go/timetracker/trackerdata"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -83,11 +84,11 @@ func TestGetNonExistingEntry(t *testing.T) {
 
 func TestAddUser1(t *testing.T) {
 
-	jsonEntry := `{ "ID":"1"}`
+	jsonEntry := `{ "ID":""}`
 	body := strings.NewReader(jsonEntry)
 
 	getResponse := getResponseEmpty()
-	rr := getResponse("PUT", "/api/v1.0/timetracker/user/1", body, t)
+	rr := getResponse("POST", "/api/v1.0/timetracker/user/1", body, t)
 
 	responsebody, _ := ioutil.ReadAll(rr.Body)
 	if status := rr.Code; status != http.StatusCreated {
@@ -98,11 +99,11 @@ func TestAddUser1(t *testing.T) {
 
 func TestAddUserAndEntry(t *testing.T) {
 
-	jsonEntry := `{ "id":"1"}`
+	jsonEntry := `{ "id":""}`
 	body := strings.NewReader(jsonEntry)
 
 	getResponse := getResponseEmpty()
-	rr := getResponse("PUT", "/api/v1.0/timetracker/user/1", body, t)
+	rr := getResponse("POST", "/api/v1.0/timetracker/user/1", body, t)
 
 	responsebody, _ := ioutil.ReadAll(rr.Body)
 	if status := rr.Code; status != http.StatusCreated {
@@ -111,7 +112,7 @@ func TestAddUserAndEntry(t *testing.T) {
 	}
 
 	jsonEntry = `{
-    		"id": "a",
+    		"id": "",
     		"userID": "1",
     		"entryType": "1",
     		"startTime": "2018-12-02T19:14:53.785417-08:00",
@@ -119,7 +120,7 @@ func TestAddUserAndEntry(t *testing.T) {
 		}`
 	body = strings.NewReader(jsonEntry)
 
-	rr = getResponse("PUT", "/api/v1.0/timetracker/user/1/entry/a", body, t)
+	rr = getResponse("POST", "/api/v1.0/timetracker/user/1/entry/a", body, t)
 
 	responsebody, _ = ioutil.ReadAll(rr.Body)
 	if status := rr.Code; status != http.StatusCreated {
@@ -131,7 +132,7 @@ func TestAddUserAndEntry(t *testing.T) {
 func TestAddEntryWrongFormat(t *testing.T) {
 
 	jsonEntry := `{
-    		"id": "c",
+    		"id": "b",
     		"userID": "1" -- wrong format
     		"entryType": "1",
     		"startTime": "2018-12-02T19:14:53.785417-08:00",
@@ -140,7 +141,7 @@ func TestAddEntryWrongFormat(t *testing.T) {
 	body := strings.NewReader(jsonEntry)
 
 	getResponse := getResponseTestData(t)
-	rr := getResponse("PUT", "/api/v1.0/timetracker/user/1/entry/c", body, t)
+	rr := getResponse("PUT", "/api/v1.0/timetracker/user/1/entry/b", body, t)
 
 	responsebody, _ := ioutil.ReadAll(rr.Body)
 	if status := rr.Code; status != http.StatusBadRequest {
@@ -220,27 +221,26 @@ func TestDeleteNonExistingEntry(t *testing.T) {
 
 func getResponseEmpty() func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
 
-	users := UserDataMap{}
-	entries := EntryDataMap{}
+	storage, _ := trackerdata.NewStorage()
 
 	return func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
-		return getHttpResponse(method, url, body, users, entries, t)
+		return getHttpResponse(method, url, body, storage, t)
 	}
 }
 
 func getResponseTestData(t *testing.T) func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
 
-	users, entries, err := AddTestData()
+	storage, err := AddTestData()
 	if err != nil {
 		t.Error(err)
 	}
 	return func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
-		return getHttpResponse(method, url, body, users, entries, t)
+		return getHttpResponse(method, url, body, storage, t)
 	}
 }
 
 
-func getHttpResponse(method string, url string, body io.Reader, users UserDataMap, entries EntryDataMap, t *testing.T) *httptest.ResponseRecorder {
+func getHttpResponse(method string, url string, body io.Reader, storage trackerdata.Storage, t *testing.T) *httptest.ResponseRecorder {
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -250,7 +250,7 @@ func getHttpResponse(method string, url string, body io.Reader, users UserDataMa
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(UserHandler(users, entries))
+	handler := http.HandlerFunc(UserHandler(storage))
 
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.

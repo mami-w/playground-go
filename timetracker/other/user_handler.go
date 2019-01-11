@@ -4,14 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"github.com/mami-w/timetracker/trackerdata"
+	"github.com/mami-w/playground-go/timetracker/trackerdata"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 )
 
-func UserHandler(users UserDataMap, entries EntryDataMap) func (w http.ResponseWriter, r *http.Request) {
+func UserHandler(storage trackerdata.Storage) func (w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r * http.Request) {
 
@@ -41,43 +41,45 @@ func UserHandler(users UserDataMap, entries EntryDataMap) func (w http.ResponseW
 		switch r.Method {
 
 		case "GET":
-			handleGet(users, entries, w, r, userID, entryID)
+			handleGet(storage, w, r, userID, entryID)
 		case "PUT":
-			handlePut(users, entries, w, r, userID, entryID)
+			handlePut(storage, w, r, userID, entryID)
+		case "POST":
+			handlePost(storage, w, r, userID, entryID)
 		case "DELETE":
-			handleDelete(users, entries, w, r, userID, entryID)
+			handleDelete(storage, w, r, userID, entryID)
 		}
 	}
 }
 
-func handleGet(users UserDataMap, entries EntryDataMap, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+func handleGet(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
-	_, found := users[userID]
+	_, found, err := storage.GetUser(userID)
 	if !found {
 		http.NotFound(w, r)
 		return
 	}
-
-	userEntries := entries[userID]
-	var body []byte
-	var err error
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	if entryID == "" {
-		var entryValues []trackerdata.Entry
-		for _,v := range userEntries {
-			entryValues = append(entryValues, v)
-		}
-		body, err = json.Marshal(entryValues)
+		handleGetAllEntries(storage, w, r, userID)
 	} else {
-		entry, found := userEntries[entryID]
-		if !found {
-			http.NotFound(w, r)
-			return
-		}
-
-		body, err = json.Marshal(entry)
-
+		handleGetEntry(storage, w, r, userID, entryID)
 	}
+}
+
+func handleGetAllEntries(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string) {
+
+	var entryValues, err = storage.GetAllEntries(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	body, err := json.Marshal(entryValues)
 
 	if err != nil {
 		fmt.Println(err)
@@ -89,21 +91,63 @@ func handleGet(users UserDataMap, entries EntryDataMap, w http.ResponseWriter, r
 	_, err = w.Write(body)
 }
 
-func handlePut(users UserDataMap, entries EntryDataMap, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+func handleGetEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
-	if entryID == "" {
-		handlePutUser(users, w, r, userID)
+	entry, found, err := storage.GetEntry(userID, entryID)
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	body, err := json.Marshal(entry)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "<todo>", http.StatusInternalServerError)
 		return
 	}
 
-	handlePutEntry(users, entries, w, r, userID, entryID)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_, err = w.Write(body)
+}
+func handlePut(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+
+	if entryID == "" {
+		handleUpdateUser(storage, w, r, userID)
+		return
+	}
+
+	handleUpdateEntry(storage, w, r, userID, entryID)
 }
 
-func handlePutUser(users UserDataMap, w http.ResponseWriter, r *http.Request, userID string) {
+func handlePost(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
-	// unmarshal the body
-	reqbody, err := ioutil.ReadAll(r.Body)
-	r.Body.Close()
+	if entryID == "" {
+		handleCreateUser(storage, w, r, userID)
+		return
+	}
+
+	handleCreateEntry(storage, w, r, userID, entryID)
+}
+
+func handleUpdateUser(storage trackerdata.Storage, w http.ResponseWriter, req *http.Request, userID string) {
+
+	if userID == "" {
+		http.Error(w, "User ID not specified", http.StatusBadRequest)
+		return
+	}
+
+	if _, found, _ := storage.GetUser(userID); !found {
+		http.Error(w, "User with user ID does not exist", http.StatusBadRequest)
+		return
+	}
+
+	reqbody, err := ioutil.ReadAll(req.Body)
+	req.Body.Close()
 	if err != nil {
 		http.Error(w, "Could not read request body", http.StatusBadRequest)
 		return
@@ -116,33 +160,49 @@ func handlePutUser(users UserDataMap, w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	if userID != user.ID {
-		http.Error(w, "UserID does not match body", http.StatusBadRequest)
+	if user.ID != "" {
+		http.Error(w, "ID in the request body should be blank", http.StatusBadRequest)
 		return
 	}
 
-	status := http.StatusOK
-	// find out if user does already exist
-	if _, found := users[userID]; !found {
-		status = http.StatusCreated
-	}
+	user.ID = userID
 
-	users[userID] = user
-	w.WriteHeader(status)
+	storage.SetUser(user)
+	w.WriteHeader(http.StatusOK)
 }
 
-func handlePutEntry(users UserDataMap, entries EntryDataMap, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+func handleCreateUser(storage trackerdata.Storage, w http.ResponseWriter, req *http.Request, userID string) {
 
-	_, exists := users[userID]
+	if userID == "" {
+		http.Error(w, "User ID not specified", http.StatusBadRequest)
+		return
+	}
+
+	if _, found, _ := storage.GetUser(userID); found {
+		http.Error(w, "User with user ID already exists", http.StatusBadRequest)
+		return
+	}
+
+	var user trackerdata.User
+
+	user.ID = userID
+
+	storage.SetUser(user)
+	w.WriteHeader(http.StatusCreated)
+}
+
+func handleUpdateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+
+	_, exists, _ := storage.GetUser(userID)
 	if !exists {
 		http.NotFound(w, r)
 		return
 	}
 
-	userEntries, exists := entries[userID]
+	_, exists, _ = storage.GetEntry(userID, entryID)
 	if !exists {
-		userEntries = map[string]trackerdata.Entry{}
-		entries[userID] = userEntries
+		http.NotFound(w, r)
+		return
 	}
 
 	reqbody, err := ioutil.ReadAll(r.Body)
@@ -169,16 +229,7 @@ func handlePutEntry(users UserDataMap, entries EntryDataMap, w http.ResponseWrit
 		return
 	}
 
-	if entry.ID == "" {
-		entry.ID, _ = newUUID()
-	}
-
-	_, exists = userEntries[entry.ID]
-	if exists == false {
-		w.WriteHeader(http.StatusCreated)
-	}
-
-	userEntries[entry.ID] = entry
+	storage.SetEntry(entry)
 
 	locationURL := createLocationURL(r, userID, entry.ID)
 
@@ -191,44 +242,84 @@ func handlePutEntry(users UserDataMap, entries EntryDataMap, w http.ResponseWrit
 	w.Write(body)
 }
 
+func handleCreateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+
+	_, exists, _ := storage.GetUser(userID)
+	if !exists {
+		http.NotFound(w, r)
+		return
+	}
+
+	reqbody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	r.Body.Close()
+
+	entry := trackerdata.Entry{}
+	err = json.Unmarshal(reqbody, &entry)
+
+	if err != nil {
+		http.Error(w, "could not read json body", http.StatusBadRequest)
+		return
+	}
+
+	if userID != entry.UserID {
+		http.Error(w, fmt.Sprintf("user IDs don't match, user: %v - entry: %v", userID, entry.UserID,), http.StatusBadRequest)
+		return
+	}
+
+	if entry.ID != "" {
+		http.Error(w, "entry id for new entry must be blank", http.StatusBadRequest)
+		return
+	}
+
+	entry.ID = entryID
+	//entry.ID, _ = newUUID()
+
+	storage.SetEntry(entry)
+
+	locationURL := createLocationURL(r, userID, entry.ID)
+
+	w.Header().Set("Location", locationURL)
+
+	body, err := json.Marshal(entry)
+	if err != nil {
+		http.Error(w, "could not write json body", http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write(body)
+}
+
 func createLocationURL(r *http.Request, userID string, entryID string) string {
 	url := r.URL
 	path := url.Scheme + "://" + url.Host + "/api/v1.0/timetracker/user/" + userID + "/entry/" + entryID
 	return path
 }
 
-func handleDelete(users UserDataMap, entries EntryDataMap, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+func handleDelete(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
 	if userID == "" {
 		http.Error(w, "no user specified", http.StatusNotFound)
 		return
 	}
 
-	_, exists := users[userID]
+	_, exists, _ := storage.GetUser(userID)
 	if !exists {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
 	}
 
-	entryMap, exists := entries[userID]
-	if !exists {
+	entries, _ := storage.GetAllEntries(userID)
+	if len(entries) == 0 {
 		http.Error(w, "no entries for user found", http.StatusNotFound)
 		return
 	}
 
-	if entryID == "" {
-		entries[userID] = nil
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+	// todo
 
-	_, exists = entryMap[entryID]
-	if !exists {
-		http.Error(w, "entry not found", http.StatusNotFound)
-		return
-	}
-
-	delete(entryMap, entryID)
 	w.WriteHeader(http.StatusNoContent)
 }
 

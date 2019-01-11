@@ -2,72 +2,74 @@ package other
 
 import (
 	"encoding/json"
-	"github.com/mami-w/timetracker/trackerdata"
+	"github.com/mami-w/playground-go/timetracker/trackerdata"
 )
 
+func AddTestData() (storage trackerdata.Storage, err error) {
 
-type UserDataMap map[string]trackerdata.User
-type EntryDataMap map[string]map[string]trackerdata.Entry
+	storage, _ = trackerdata.NewStorage()
+	user := trackerdata.User{}
 
-func InitData() (users	 UserDataMap, entries EntryDataMap, err error) {
-
-	users = UserDataMap{}
-	entries = EntryDataMap{}
-
-	return users, entries, nil
-}
-func AddTestData() (userCache UserDataMap, entryCache EntryDataMap, err error) {
-
-	err = json.Unmarshal([]byte(userdata), &userCache)
+	err = json.Unmarshal([]byte(user1), &user)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	storage.SetUser(user)
 
-	return userCache, entryCache, json.Unmarshal([]byte(entrydata), &entryCache)
+	err = json.Unmarshal([]byte(user2), &user)
+	storage.SetUser(user)
+
+	entry := trackerdata.Entry{}
+
+	err = json.Unmarshal([]byte(entry1a), &entry)
+	storage.SetEntry(entry)
+	err = json.Unmarshal([]byte(entry1b), &entry)
+	storage.SetEntry(entry)
+	err = json.Unmarshal([]byte(entry2c), &entry)
+	storage.SetEntry(entry)
+	err = json.Unmarshal([]byte(entry2d), &entry)
+	storage.SetEntry(entry)
+
+	return storage, err
 }
 
 const (
-	userdata = `
-{
-	"1": { "ID":"1"},
-	"2": { "ID":"2"}
-}
-`
-
-	entrydata = `
-{
-	"1":{
-		"a":{
+	user1 = `{ "ID":"1"}`
+	user2 = `{ "ID":"2"}`
+	entry1a = `
+		{
     		"id": "a",
     		"userID": "1",
     		"entryType": "1",
     		"startTime": "2018-12-02T19:14:53.785417-08:00",
     		"length": 90000000000
-		},
-		"b":{
+		}
+`
+	entry1b = `
+		{
     		"id": "b",
     		"userID": "1",
     		"entryType": "1",
     		"startTime": "2018-12-02T19:14:53.785417-08:00",
     		"length": 90000000000
 		}
-	},
-	"2":{
-		"c":{
+`
+	entry2c = `
+	{
     		"id": "c",
     		"userID": "2",
     		"entryType": "1",
     		"startTime": "2018-12-02T19:14:53.785417-08:00",
     		"length": 90000000000
-		},
-		"d":{
+		}
+`
+	entry2d = `
+		{
     		"id": "d",
     		"userID": "2",
     		"entryType": "1",
     		"startTime": "2018-12-02T19:14:53.785417-08:00",
     		"length": 90000000000
 		}
-	}
-}
 `
 )

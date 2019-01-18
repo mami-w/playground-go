@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"github.com/mami-w/playground-go/timetracker/logger"
 	"github.com/mami-w/playground-go/timetracker/trackerdata"
 	"io"
 	"io/ioutil"
@@ -19,23 +20,29 @@ func UserHandler(storage trackerdata.Storage) func (w http.ResponseWriter, r *ht
 		path := r.URL.RequestURI()
 
 		// extract the user id
-		pattern := regexp.MustCompile(`.*/api/v1\.0/timetracker/user/([^/]*)*/?(entry)?/?([^/]*).*`)
+		pattern := regexp.MustCompile(`.*/api/v1\.0/timetracker/user/([^/]*)/?(entry)?/?([^/]*)/?`)
 
 		matches := pattern.FindStringSubmatch(path)
 
 		var userID, entryID string
 
 		if len(matches) == 0 {
-			http.NotFound(w, r)
+			http.Error(w, "Invalid query format", http.StatusBadRequest)
 			return
 		}
 
-		if len(matches) > 1 {
-			userID = matches[1]
+		userID = matches[1]
+ 		entry := matches[2]
+		entryID = matches[3]
+
+		if userID == "" {
+			http.Error(w, "No user id specified", http.StatusBadRequest)
+			return
 		}
 
-		if len(matches) > 3 {
-			entryID = matches[3]
+		if entry == "" && entryID != "" {
+			http.Error(w, "Invalid request format", http.StatusBadRequest)
+			return
 		}
 
 		switch r.Method {
@@ -82,8 +89,8 @@ func handleGetAllEntries(storage trackerdata.Storage, w http.ResponseWriter, r *
 	body, err := json.Marshal(entryValues)
 
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "<todo>", http.StatusInternalServerError)
+		logger.Get().Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -99,14 +106,14 @@ func handleGetEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.
 		return
 	}
 	if err != nil {
-		fmt.Println(err)
+		logger.Get().Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	body, err := json.Marshal(entry)
 
 	if err != nil {
-		fmt.Println(err)
+		logger.Get().Println(err)
 		http.Error(w, "<todo>", http.StatusInternalServerError)
 		return
 	}

@@ -3,11 +3,12 @@ package other
 import (
 	"encoding/json"
 	"github.com/mami-w/playground-go/timetracker/trackerdata"
+	"github.com/mami-w/playground-go/timetracker/trackerdata/memoryStorage"
 )
 
 func AddTestData() (storage trackerdata.Storage, err error) {
 
-	storage, _ = trackerdata.NewStorage()
+	storage, _ = memoryStorage.NewStorage()
 	user := trackerdata.User{}
 
 	err = json.Unmarshal([]byte(user1), &user)

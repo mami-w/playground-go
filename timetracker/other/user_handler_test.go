@@ -250,7 +250,7 @@ func getHttpResponse(method string, url string, body io.Reader, storage trackerd
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(UserHandler(storage))
+	handler := http.HandlerFunc(UserHandler(storage)) // fyi: typecast
 
 	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
 	// directly and pass in our Request and ResponseRecorder.

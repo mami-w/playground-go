@@ -13,9 +13,8 @@ import (
 	"os"
 )
 
-// make configurable
-// 3. add logger (https://golang.org/pkg/log/#Logger)
-// Create logger with stdinout first, then configure
+// https
+// auth0
 
 func main() {
 

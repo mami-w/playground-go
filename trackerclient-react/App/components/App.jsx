@@ -20,21 +20,17 @@ export default class App extends React.Component {
 
     render() {
          return (
-                <div>
-                    <Users
-                        selectUser={this.selectUser}
-                        selectedUser={this.state.selectedUser}
-                    />
-                    <Entries selectedUser={this.state.selectedUser}/>
-                </div>
+             <div>
+                 <Users selectUser={this.selectUser} selectedUser={this.state.selectedUser}/>
+                 <Entries selectedUser={this.state.selectedUser}/>
+             </div>
          )
-
     }
 
-    selectUser = (id) => {
-                        console.log("called selectUser")
+    selectUser = (userId) => {
+        console.log("called selectUser")
         this.setState( {
-            selectedUser : id
+            selectedUser : userId
         })
     }
 }

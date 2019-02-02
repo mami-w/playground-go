@@ -11,64 +11,63 @@ export default class EntryReport extends React.Component {
         const selectedEntry = this.props.selectedEntry;
         const editMode = this.props.editMode;
 
-        const entryClassName = row.id == selectedEntry ? "entry-select" : "entry";
-        const editEntryClassName = editMode != entryEditMode.none ? "edit-entry-hidden" : "edit-entry"
-        const deleteEntryClassName = editMode != entryEditMode.none ? "delete-entry-hidden" : "delete-entry"
+        // todo: translate startTime and duration into something typed
 
         if ((editMode == entryEditMode.editEntry) && (row.id == selectedEntry)) {
             return this.renderEdit(row)
         }
         else {
+            const entryClassName = row.id == selectedEntry ? "entry-select" : "entry";
+            const editEntryClassName = editMode != entryEditMode.none ? "edit-entry-hidden" : "edit-entry"
+            const deleteEntryClassName = editMode != entryEditMode.none ? "delete-entry-hidden" : "delete-entry"
+
             return this.renderNormal(row, entryClassName, editEntryClassName, deleteEntryClassName)
         }
-
     }
-
 
     renderNormal = (row, entryClassName, editEntryClassName, deleteEntryClassName) => {
         return (
             <div className={entryClassName} onClick={this.props.selectEntry}>
-            <div id="entry-id">{row.id}</div>
-    <div id="entry-userId">{row.userId}</div>
-    <div id="entry-entryType">{row.entryType}</div>
-    <div id="entry-startTime">{row.startTime}</div>
-    <div id="entry-length">{row.length}</div>
+                <div id="entry-id">{row.id}</div>
+                <div id="entry-userId">{row.userId}</div>
+                <div id="entry-entryType">{row.entryType}</div>
+                <div id="entry-startTime">{row.startTime}</div>
+                <div id="entry-length">{row.length}</div>
                 <button className={editEntryClassName} onClick={this.props.setEditEntry}>Edit</button>
                 <button className={deleteEntryClassName} onClick={this.props.deleteEntry}>X</button>
-    </div>
+            </div>
         )
     }
 
-
     renderEdit = (row) => {
         return (
-            <form className="entry" onSubmit={this.submitEntry.bind(this, row.id)}>
+            <form className="entry" onSubmit={this.submitEntry.bind(this, row.id, row.userId)}>
                 <div id="entry-id">{row.id}</div>
                 <div id="entry-userId">{row.userId}</div>
                 <div>
-                    <input type="text" name="entryType" defaultValue="1"/>
+                    <input type="text" name="entryType" defaultValue={row.entryType}/>
                 </div>
                 <div>
-                    <input type="text" name="startTime" defaultValue="1"/>
+                    <input type="text" name="startTime" defaultValue={row.startTime}/>
                 </div>
                 <div>
-                    <input type="text" name="length" defaultValue="1"/>
+                    <input type="text" name="length" defaultValue={row.length}/>
                 </div>
                 <button type="submit" className="submit-user">Submit</button>
             </form>
         )
     }
 
-    submitEntry = (entryId, e) => {
+    submitEntry = (entryId, userId, e) => {
 
-        // todo - add user names
+        // todo: translate these into strings
         var entryType = e.target.elements.entryType.value;
         var startTime = e.target.elements.startTime.value;
         var entryLength = e.target.elements.length.value;
 
         const entry = {
             id: entryId,
-            userId : "dummy", // todo
+            userId : userId,
             entryType : entryType,
             startTime : startTime, // translate
             length: entryLength // translate

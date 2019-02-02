@@ -31,10 +31,9 @@ export default class Entries extends React.Component {
     }
 
     render() {
-
         console.log("Entries will render")
+
         const entries = this.state.entries;
-        const editMode = this.state.editMode;
 
         const error = this.state.error;
         const needLoadEntries = this.state.needLoadEntries;
@@ -49,6 +48,8 @@ export default class Entries extends React.Component {
             return <div>Loading...</div>;
         } else {
             console.log("printing %d entries", entries.length);
+            const editMode = this.state.editMode;
+
             return (
                 <div>
                     {(editMode == entryEditMode.addEntry) ? this.renderNewEntry() : null}
@@ -87,18 +88,11 @@ export default class Entries extends React.Component {
         }
     }
 
-        /*
-
-         */
     renderNewEntry () {
-        // create new guid
-        const id = uuid.v4()
+        const newEntryId = uuid.v4()
         return (
-            <form
-                className="inputForm"
-                onSubmit={this.finishAddEntry}
-            >
-                <input type="text" name="entryId" defaultValue={id} />
+            <form className="inputForm" onSubmit={this.finishAddEntry}>
+                <input type="text" name="entryId" defaultValue={newEntryId} />
                 <button type="submit">Create Entry</button>
             </form>
         )
@@ -118,6 +112,7 @@ export default class Entries extends React.Component {
             this.setState({ entries : JSON.parse(entries) })
         }
 
+        // double check this...
         const needLoadEntries = sessionStorage.getItem("needLoadEntries")
         if (needLoadEntries == null || needLoadEntries == true) {
             this.loadEntries();
@@ -173,7 +168,7 @@ export default class Entries extends React.Component {
             )
     }
 
-    postEntry(entry) {
+    sendPostEntry(entry) {
         const url = `/api/v1.0/tracker/user/${entry.userId}/entries/${entry.id}`;
         fetch(url, {
             method: 'POST',
@@ -182,12 +177,26 @@ export default class Entries extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(entry)
-        }).catch(
+        })
+            .then(
+                () =>  {
+                    this.setState({
+                            entries: this.state.entries.concat([entry]),
+                            editMode : entryEditMode.none
+                        },
+                        () => {
+                            const key = `entries${entry.userId}`;
+                            sessionStorage.setItem(key, JSON.stringify(this.state.entries))
+                        }
+                    );
+                }
+            )
+            .catch(
             (error) => { this.setState({error: error})}
         );
     }
 
-    putEntry(entry) {
+    sendPutEntry(entry) {
         const url = `/api/v1.0/tracker/user/${entry.userId}/entries/${entry.id}`;
         fetch(url, {
             method: 'PUT',
@@ -196,16 +205,40 @@ export default class Entries extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(entry)
-        }).catch(
+        })
+        .then(() => {
+            this.setState({
+                entries: this.state.entries.filter(entry => entry.id !== updatedEntry.id).concat([updatedEntry]),
+                editMode : entryEditMode.none
+            },
+            () => {
+                const key = `entries${entry.userId}`;
+                sessionStorage.setItem(key, JSON.stringify(this.state.entries))
+            }
+            );
+        })
+        .catch(
             (error) => { this.setState({error: error})}
+        );
+    }
+
+    sendDeleteEntry(id) {
+        // todo: ajax missing
+        this.setState({
+                entries: this.state.entries.filter(entry => entry.id !== id),
+            },
+            () => {
+                const key = `entries${entry.userId}`;
+                sessionStorage.setItem(key, JSON.stringify(this.state.entries))
+            }
         );
     }
 
     selectEntry = (id) => {
          this.setState({
             selectedEntry:id
-    })}
-
+        })
+    }
 
     setAddEntry = () => {
         this.setState({
@@ -221,54 +254,29 @@ export default class Entries extends React.Component {
 
     // add a user to the users
     finishAddEntry = (e) => {
-            const selectedUser = this.props.selectedUser;
-            if (selectedUser == null) {
-                return;
-            }
+        const selectedUser = this.props.selectedUser;
+        if (selectedUser == null) {
+           return;
+        }
 
-        const id = e.target.elements.entryId.value // from elements property
+        const id = e.target.elements.entryId.value;
+
         var entry = {
             id: id,
-            userId: selectedUser
+            userId: selectedUser,
             // todo - default values; type, now, 1h
+            entryType: "1"
         }
-        postEntry(entry)
-        this.setState({
-                entries: this.state.entries.concat([entry]),
-                editMode : entryEditMode.none
-            },
-            () => {
-            const key = `entries${entry.userId}`;
-            sessionStorage.setItem(key, JSON.stringify(this.state.entries))
-            }
-        );
+
+        sendPostEntry(entry);
     }
 
-    // todo...
-    // delete our user
     deleteEntry = (id, e) => {
         e.stopPropagation();
-        // todo: ajax call
-        this.setState({
-                entries: this.state.entries.filter(entry => entry.id !== id),
-            },
-            () => {
-                const key = `entries${entry.userId}`;
-                sessionStorage.setItem(key, JSON.stringify(this.state.entries))
-            }
-        );
+        sendDeleteEntry(id);
     }
 
     finishUpdateEntry = (updatedEntry) => {
-        putEntry(updatedEntry)
-        this.setState({
-                entries: this.state.entries.filter(entry => entry.id !== updatedEntry.id).concat([updatedEntry]),
-                editMode : entryEditMode.none
-            },
-            () => {
-                const key = `entries${entry.userId}`;
-                sessionStorage.setItem(key, JSON.stringify(this.state.entries))
-            }
-        );
+        sendPutEntry(updatedEntry);
     }
 }

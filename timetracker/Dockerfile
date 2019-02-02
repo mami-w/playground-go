@@ -11,7 +11,8 @@ RUN cd $SRC_DIR; go build -o timetracker ./main/main.go; cp timetracker /app/
 ENTRYPOINT ["./tracker.sh"]
 
 # build with docker build -t mami-w/myimage-go .
-# run with docker run -p 8000:8000 mami-w/myimage-go:latest
+# run with docker run -p 8000:8000 mami-w/myimage-go:latest [--env-file <env file>] [-it] [-d]
+
 
 #FROM golang:1.8.3 as builder
 #WORKDIR /go/src/github.com/flaviocopes/findlinks

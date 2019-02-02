@@ -1,0 +1,101 @@
+body {
+    background: whitesmoke;
+    font-family: sans-serif;
+}
+
+.user:hover {
+    box-shadow: 0 0 0.3em 0.03em rgba(0, 0, 0, 0.7);
+}
+.user:hover .delete-user {
+    visibility: visible;
+}
+.user-select:hover .delete-user {
+    visibility: visible;
+}
+
+.delete-user {
+    cursor: pointer;
+    visibility: hidden;
+}
+.edit-user-hidden {
+    visibility: hidden;
+}
+.delete-user-hidden {
+    visibility: hidden;
+}
+
+.user-header {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 150px 150px 70px 50px;
+    background-color:#f0f8ff;
+    font-size:small;
+}
+.user {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 150px 150px 70px 50px;
+    background-color:#f0fff0;
+    font-size:small;
+}
+.user-select {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 150px 150px 70px 50px;
+    background-color:#f0fff0;
+    font-size:small;
+}
+
+#user-header-id {
+    text-align: center;
+}
+#user-header-name {
+    text-align: center;
+}
+
+.entry:hover {
+    box-shadow: 0 0 0.3em 0.03em rgba(0, 0, 0, 0.7);
+}
+.entry:hover .delete-entry {
+    visibility: visible;
+}
+.entry-select:hover .delete-entry {
+    visibility: visible;
+}
+
+.delete-entry {
+    cursor: pointer;
+    visibility: hidden;
+}
+.edit-entry-hidden {
+    visibility: hidden;
+}
+.delete-entry-hidden {
+    visibility: hidden;
+}
+
+.entry-header {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 100px 100px 50px 150px 150px 70px 50px;
+    background-color:#f0f8ff;
+    font-size:small;
+}
+.entry {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 100px 100px 50px 150px 150px 70px 50px;
+    background-color:#f0fff0;
+    font-size:small;
+}
+.entry-select {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 100px 100px 50px 150px 150px 70px 50px;
+    background-color:#f0fff0;
+    font-size:small;
+}
+
+.emtru-header-column {
+    text-align: center;
+}

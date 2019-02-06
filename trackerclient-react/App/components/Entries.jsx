@@ -9,9 +9,10 @@ export default class Entries extends React.Component {
         this.state = {
             editMode : entryEditMode.none,
             entries: [],
-            needLoadEntries : true, // todo: needs major rethinking
+            loading : false, // caching - later
             selectedEntry : null
         };
+        console.log("entries constructor")
     }
 
     componentDidMount() {
@@ -36,7 +37,7 @@ export default class Entries extends React.Component {
         const entries = this.state.entries;
 
         const error = this.state.error;
-        const needLoadEntries = this.state.needLoadEntries;
+        const loading = this.state.loading;
         const selectedUser = this.props.selectedUser;
 
         if (error) {
@@ -44,14 +45,18 @@ export default class Entries extends React.Component {
         } else if (selectedUser == null) {
             return <div>No user selected...</div>
         }
-        else if (needLoadEntries) {
+        else if (loading) {
             return <div>Loading...</div>;
         } else {
             console.log("printing %d entries", entries.length);
-            const editMode = this.state.editMode;
 
+            const editMode = this.state.editMode;
+            const selectedEntry = this.state.selectedEntry;
             return (
                 <div>
+                    <div>
+                        <button onClick={this.reloadAll}>Reload Entries</button>
+                    </div>
                     {(editMode == entryEditMode.addEntry) ? this.renderNewEntry() : null}
                     {(editMode == entryEditMode.none && (selectedUser != null)) ? <button onClick={this.setAddEntry}>New Entry</button> : null}
 
@@ -63,7 +68,7 @@ export default class Entries extends React.Component {
                                 <div className="entry-header-column">UserId</div>
                                 <div className="entry-header-column">Entry Type</div>
                                 <div className="entry-header-column">Start Time</div>
-                                <div className="entry-header-column">Duration</div>
+                                <div className="entry-header-column">Duration (min)</div>
                             </div>
                         </li>
                     </ul>
@@ -73,12 +78,13 @@ export default class Entries extends React.Component {
                                 <li key={entry.id}>
                                     <EntryReport
                                         entry={entry}
-                                        deleteEntry={this.deleteEntry.bind(this, entry.id)}
+                                        deleteEntry={this.deleteEntry.bind(this, entry.id, selectedEntry)}
                                         finishUpdateEntry={this.finishUpdateEntry.bind(this, entry.id)}
                                         selectEntry={this.selectEntry.bind(this, entry.id)}
-                                        setEditEntry={this.setEditEntry}
-                                        selectedEntry={this.state.selectedEntry}
-                                        editMode={this.state.editMode}
+                                        setEditEntry={this.setEditEntry.bind(this, entry.id)}
+                                        cancelEditMode={this.cancelEditMode}
+                                        selectedEntry={selectedEntry}
+                                        editMode={editMode}
                                     />
                                 </li>)
                         })}
@@ -94,8 +100,13 @@ export default class Entries extends React.Component {
             <form className="inputForm" onSubmit={this.finishAddEntry}>
                 <input type="text" name="entryId" defaultValue={newEntryId} />
                 <button type="submit">Create Entry</button>
+                <button type="button" onClick={this.cancelEditMode}>Cancel</button>
             </form>
         )
+    }
+
+    reloadAll = () => {
+         this.loadEntries();
     }
 
     checkReload() {
@@ -111,14 +122,8 @@ export default class Entries extends React.Component {
         if (entries != null) {
             this.setState({ entries : JSON.parse(entries) })
         }
-
-        // double check this...
-        const needLoadEntries = sessionStorage.getItem("needLoadEntries")
-        if (needLoadEntries == null || needLoadEntries == true) {
-            this.loadEntries();
-        }
         else {
-            this.setState({needLoadEntries:false})
+            this.loadEntries();
         }
     }
 
@@ -133,17 +138,16 @@ export default class Entries extends React.Component {
             .then(
                 res => res.json(),
                 (error) => {
-                    this.setState({needLoadEntries: false, error: error})
+                    this.setState({loading: false, error: error})
                 }
             )
             .then(
                 (result) => {
                     this.setState({
-                            needLoadEntries: false,
+                            loading: false,
                             entries: result
                         },
                         () => {
-                            sessionStorage.setItem("needLoadEntries", false);
                             const key = 'entries${selectedUser}'
                             sessionStorage.setItem(key, JSON.stringify(this.state.entries));
                         });
@@ -153,7 +157,7 @@ export default class Entries extends React.Component {
                 // exceptions from actual bugs in components.
                 (error) => {
                     this.setState({
-                        needLoadEntries: false,
+                        loading: false,
                         error: error
                     });
                 }
@@ -161,7 +165,7 @@ export default class Entries extends React.Component {
             .catch(
                 (error) => {
                     this.setState({
-                        needLoadEntries: true,
+                        loading: true,
                         error: error
                     })
                 }
@@ -169,7 +173,7 @@ export default class Entries extends React.Component {
     }
 
     sendPostEntry(entry) {
-        const url = `/api/v1.0/tracker/user/${entry.userId}/entries/${entry.id}`;
+        const url = `/api/v1.0/tracker/user/${entry.userID}/entries/${entry.id}`;
         fetch(url, {
             method: 'POST',
             headers: {
@@ -185,7 +189,7 @@ export default class Entries extends React.Component {
                             editMode : entryEditMode.none
                         },
                         () => {
-                            const key = `entries${entry.userId}`;
+                            const key = `entries${entry.userID}`;
                             sessionStorage.setItem(key, JSON.stringify(this.state.entries))
                         }
                     );
@@ -212,7 +216,7 @@ export default class Entries extends React.Component {
                 editMode : entryEditMode.none
             },
             () => {
-                const key = `entries${entry.userId}`;
+                const key = `entries${entry.userID}`;
                 sessionStorage.setItem(key, JSON.stringify(this.state.entries))
             }
             );
@@ -222,16 +226,28 @@ export default class Entries extends React.Component {
         );
     }
 
-    sendDeleteEntry(id) {
-        // todo: ajax missing
-        this.setState({
-                entries: this.state.entries.filter(entry => entry.id !== id),
+    sendDeleteEntry(userId, id) {
+        const url = `/api/v1.0/tracker/user/${userId}/entries/${id}`;
+        fetch(url, {
+            method: 'PUT',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
             },
-            () => {
-                const key = `entries${entry.userId}`;
-                sessionStorage.setItem(key, JSON.stringify(this.state.entries))
-            }
-        );
+            body: JSON.stringify(entry)
+        })
+            .then(() => {
+                this.setState({
+                        entries: this.state.entries.filter(entry => entry.id !== id),
+                    },
+                    () => {
+                        const key = `entries${userId}`;
+                        sessionStorage.setItem(key, JSON.stringify(this.state.entries))
+                    });
+            })
+            .catch(
+                (error) => { this.setState({error: error})}
+            );
     }
 
     selectEntry = (id) => {
@@ -246,37 +262,49 @@ export default class Entries extends React.Component {
         })
     }
 
-    setEditEntry = () => {
+    setEditEntry = (id) => {
+        this.selectEntry(id);
         this.setState({
             editMode: entryEditMode.editEntry
         })
     }
 
-    // add a user to the users
+    cancelEditMode  = (e)  => {
+        //e.preventDefault();
+        //e.stopPropagation();
+
+        this.setState({
+            editMode: entryEditMode.none
+        })
+    }
+
     finishAddEntry = (e) => {
+        e.preventDefault();
+
         const selectedUser = this.props.selectedUser;
         if (selectedUser == null) {
            return;
         }
 
         const id = e.target.elements.entryId.value;
-
+        const userId = selectedUser;
+        const now = (new Date()).toJSON();
         var entry = {
             id: id,
-            userId: selectedUser,
-            // todo - default values; type, now, 1h
-            entryType: "1"
+            userID: userId,
+            entryType: "1",
+            startTime: now,
+            length: "3600000000000"
         }
 
-        sendPostEntry(entry);
+        this.sendPostEntry(entry);
     }
 
-    deleteEntry = (id, e) => {
-        e.stopPropagation();
-        sendDeleteEntry(id);
+    deleteEntry = (id, userId, e) => {
+        this.sendDeleteEntry(id, userId);
     }
 
     finishUpdateEntry = (updatedEntry) => {
-        sendPutEntry(updatedEntry);
+        this.sendPutEntry(updatedEntry);
     }
 }

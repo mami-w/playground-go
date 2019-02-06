@@ -7,11 +7,16 @@ import (
 	"net/http"
 )
 
+const (
+	entryQueryString = "/api/v1.0/timetracker/user/%s"
+	entryFormatString = "/api/v1.0/timetracker/user/%s/entry/%s"
+)
+
 func getAllEntriesHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		userID := vars["userid"] // the book title slug
-		url := trackerEndpoint + fmt.Sprintf(userFormatString, userID)
+		userID := vars["userid"]
+		url := trackerEndpoint + fmt.Sprintf(entryQueryString, userID)
 
 		client := &http.Client{}
 		req, _ := http.NewRequest("GET", url, r.Body)
@@ -37,28 +42,120 @@ func getAllEntriesHandler(trackerEndpoint string) func(w http.ResponseWriter, r 
 
 func getEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		entryID := vars["entryid"]
+
+		url := trackerEndpoint + fmt.Sprintf(entryFormatString, userID, entryID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("GET", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }
 
 func createEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		entryID := vars["entryid"]
+
+		url := trackerEndpoint + fmt.Sprintf(entryFormatString, userID, entryID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("POST", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }
 
 func updateEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		entryID := vars["entryid"]
+
+		url := trackerEndpoint + fmt.Sprintf(entryFormatString, userID, entryID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("PUT", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }
 
 func deleteEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		entryID := vars["entryid"]
+
+		url := trackerEndpoint + fmt.Sprintf(entryFormatString, userID, entryID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("DELETE", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }

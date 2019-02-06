@@ -10,8 +10,6 @@ import (
 
 const (
 	defaultAddress = "http://ec2-18-217-168-85.us-east-2.compute.amazonaws.com"
-	userFormatString = "/api/v1.0/timetracker/user/%s"
-	entryFormatString = "/api/v1.0/timetracker/user/%s/entry/%s"
 )
 
 func NewServer() (router *mux.Router){

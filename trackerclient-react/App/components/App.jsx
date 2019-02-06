@@ -8,6 +8,7 @@ export default class App extends React.Component {
         this.state = {
             selectedUser: null
         };
+        console.log("app constructor")
     }
 
     componentWillMount() {
@@ -19,10 +20,12 @@ export default class App extends React.Component {
     }
 
     render() {
+        const selectedUser = this.state.selectedUser;
+
          return (
              <div>
-                 <Users selectUser={this.selectUser} selectedUser={this.state.selectedUser}/>
-                 <Entries selectedUser={this.state.selectedUser}/>
+                 <Users selectUser={this.selectUser} selectedUser={selectedUser}/>
+                 <Entries selectedUser={selectedUser}/>
              </div>
          )
     }

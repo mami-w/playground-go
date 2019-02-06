@@ -51,11 +51,14 @@ export default class UserReport extends React.Component {
                 <input type="text" name="userName" defaultValue="dummy"/>
             </div>
             <button type="submit" className="submit-user">Submit</button>
+            <button type="button" onClick={this.props.cancelEditMode}>Cancel</button>
         </form>
         )
     }
 
     submitUser = (userId, e) => {
+
+        e.preventDefault();
 
             // todo - add user names
         var newName = e.target.elements.userName.value

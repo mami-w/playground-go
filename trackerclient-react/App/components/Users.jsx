@@ -9,21 +9,19 @@ export default class Users extends React.Component {
         this.state = {
             editMode : userEditMode.none,
             users: [],
-            needLoadUsers : true
+            loading: true
         };
+        console.log("users constructor")
     }
 
     componentDidMount() {
-
+        this.loadUsers();
         console.log("Users did mount")
-        this.checkReload();
+
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         console.log("Users did Update")
-        if (prevProps.selectedUser != this.props.selectedUser) {
-            this.checkReload();
-        }
     }
 
     componentWillUnmount() {
@@ -37,15 +35,20 @@ export default class Users extends React.Component {
         const editMode = this.state.editMode;
 
         const error = this.state.error;
-        const needLoadUsers = this.state.needLoadUsers;
+        const loading = this.state.loading;
 
         if (error) {
             return <div>Error: {error.message}</div>;
-        } else if (needLoadUsers) {
+        } else if (loading) {
             return <div>Loading...</div>;
         } else {
+            const selectedUser = this.props.selectedUser;
+
             return (
                 <div>
+                    <div>
+                        <button onClick={this.reloadAll}>Reload Users</button>
+                    </div>
                     {(editMode == userEditMode.addUser) ? this.renderNewUser() : null}
                     {(editMode == userEditMode.none) ? <button onClick={this.setAddUser}>New User</button> : null}
 
@@ -67,9 +70,10 @@ export default class Users extends React.Component {
                                     deleteUser={this.deleteUser.bind(this, user.id)}
                                     finishUpdateUser={this.finishUpdateUser.bind(this)}
                                     selectUser={this.props.selectUser.bind(this, user.id)}
-                                    setEditUser={this.setEditUser}
-                                    selectedUser={this.props.selectedUser}
-                                    editMode={this.state.editMode}
+                                    setEditUser={this.setEditUser.bind(this, user.id)}
+                                    cancelEditMode={this.cancelEditMode}
+                                    selectedUser={selectedUser}
+                                    editMode={editMode}
                                 />
                                 </li>)
                         })}
@@ -89,23 +93,13 @@ export default class Users extends React.Component {
             >
                 <input type="text" name="userId" defaultValue={id} />
                 <button type="submit">Create User</button>
+                <button type="button" onClick={this.cancelEditMode}>Cancel</button>
             </form>
         )
     }
 
-    checkReload() {
-        const users = sessionStorage.getItem("users")
-        if (users != null) {
-            this.setState({ users : JSON.parse(users) })
-        }
-
-        const needLoadUsers = sessionStorage.getItem("needLoadUsers")
-        if (needLoadUsers == null || needLoadUsers == true) {
-            this.loadUsers();
-        }
-        else {
-            this.setState({needLoadUsers:false})
-        }
+    reloadAll = () => {
+         this.loadUsers();
     }
 
     loadUsers() {
@@ -114,26 +108,22 @@ export default class Users extends React.Component {
             .then(
                 res => res.json(),
                 (error) => {
-                    this.setState({needLoadUsers: false, error: error})
+                    this.setState({loading: false, error: error})
                 }
             )
             .then(
                 (result) => {
                     this.setState({
-                        needLoadUsers: false,
+                        loading: false,
                         users: result
-                    },
-                        () => {
-                            sessionStorage.setItem("needLoadUsers", false);
-                            sessionStorage.setItem("users", JSON.stringify(this.state.users));
-                        });
+                    });
                 },
                 // Note: it's important to handle errors here
                 // instead of a catch() block so that we don't swallow
                 // exceptions from actual bugs in components.
                 (error) => {
                     this.setState({
-                        needLoadUsers: false,
+                        loading: false,
                         error: error
                     });
                 }
@@ -141,14 +131,14 @@ export default class Users extends React.Component {
             .catch(
                 (error) => {
                     this.setState({
-                        needLoadUsers: true,
+                        loading: true,
                         error: error
                     })
                 }
             )
     }
 
-    postUser(user) {
+    sendPostUser(user) {
         const url = `/api/v1.0/tracker/user/${user.id}`;
         fetch(url, {
             method: 'POST',
@@ -157,12 +147,23 @@ export default class Users extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(user)
-            }).catch(
+            })
+            .then(() => {
+                this.setState({
+                        users: this.state.users.concat([user]),
+                        editMode : userEditMode.none
+                    }                )
+            }, (error) => {
+                this.setState({
+                    error:error
+                })
+            })
+            .catch(
             (error) => { this.setState({error: error})}
         );
     }
 
-    putUser(user) {
+    sendPutUser(user) {
         const url = `/api/v1.0/tracker/user/${user.id}`;
         fetch(url, {
             method: 'PUT',
@@ -171,56 +172,83 @@ export default class Users extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(user)
-        }).catch(
+        })
+            .then(() => {
+                this.setState({
+                        users: this.state.users.filter(user => user.id !== id).concat([updatedUser]),
+                        editMode : userEditMode.none
+                    })
+            }, (error) => {
+                this.setState({
+                    error:error
+                })
+            })
+            .catch(
             (error) => { this.setState({error: error})}
         );
     }
 
+    sendDeleteUser(id) {
+        const url = `/api/v1.0/tracker/user/${id}`;
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(id)
+        })
+            .then(() => {
+                this.setState({
+                        users: this.state.users.filter(user => user.id !== id),
+                    })
+            }, (error) => {
+                this.setState({
+                    error:error
+                })
+            })
+            .catch(
+                (error) => { this.setState({error: error})}
+            );
+    }
+
     setAddUser = () => {
-                console.log("called setAddUser");
         this.setState({
             editMode : userEditMode.addUser
         })
     }
 
-    setEditUser = () => {
-                console.log("called setEditUser")
+    setEditUser = (id) => {
+        this.props.selectUser(id);
         this.setState( {
             editMode : userEditMode.editUser
         })
     }
 
-    finishAddUser = (e) => {
-                console.log("called finishAddUser")
-        const id = e.target.elements.userId.value // from elements property
-        var user = { id: id }
-        this.postUser(user)
-        this.setState({
-            users: this.state.users.concat([user]),
+    cancelEditMode = (e) => {
+        //e.preventDefault();
+        //e.stopPropagation();
+
+        this.setState( {
             editMode : userEditMode.none
-            },
-            () => sessionStorage.setItem("users", JSON.stringify(this.state.users))
-        );
+        })
     }
 
-    // todo...
-    // delete our user
+    finishAddUser = (e) => {
+        e.preventDefault();
+
+        const id = e.target.elements.userId.value // from elements property
+        var user = { id: id }
+
+        this.sendPostUser(user)
+
+    }
+
     deleteUser = (id, e) => {
-                console.log("called finishUpdateUser")
-        e.stopPropagation();
-        // todo: ajax call
-        this.setState({
-            users: this.state.users.filter(user => user.id !== id),
-        },
-            () => sessionStorage.setItem("users", JSON.stringify(this.state.users)));
+        this.sendDeleteUser(id)
     }
 
     finishUpdateUser = (updatedUser) => {
-        this.putUser(updatedUser)
-        this.setState({
-            users: this.state.users.filter(user => user.id !== id).concat([updatedUser]),
-            editMode : userEditMode.none
-        },
-            () => sessionStorage.setItem("users", JSON.stringify(this.state.users)));
+        this.sendPutUser(updatedUser)
     }
 }

@@ -4,7 +4,7 @@
   "description": "A simple timetracker client in React.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mami-w/playground-go.git"
+    "url": "git+https://github.com/mami-w/playground-go.git"
   },
   "main": "index.js",
   "scripts": {
@@ -32,8 +32,14 @@
     "webpack-merge": "^0.8.3"
   },
   "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-react-app": "^3.1.2",
+    "node-uuid": "^1.4.7",
     "react": "^0.14.7",
-    "react-dom": "^0.14.7",
-    "node-uuid": "^1.4.7"
-  }
+    "react-dom": "^0.14.7"
+  },
+  "bugs": {
+    "url": "https://github.com/mami-w/playground-go/issues"
+  },
+  "homepage": "https://github.com/mami-w/playground-go#readme"
 }

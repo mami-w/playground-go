@@ -1,31 +1,125 @@
 package server
 
-import "net/http"
+import (
+	"fmt"
+	"github.com/gorilla/mux"
+	"io/ioutil"
+	"net/http"
+)
+
+const (
+	userQueryString = "/api/v1.0/timetracker/user"
+	userFormatString = "/api/v1.0/timetracker/user/%s"
+)
 
 func getAllUsersHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}
+		return func(w http.ResponseWriter, r *http.Request) {
+
+			url := trackerEndpoint + fmt.Sprintf(userQueryString)
+
+			client := &http.Client{}
+			req, _ := http.NewRequest("GET", url, r.Body)
+
+			resp, err := client.Do(req)
+
+			if err != nil {
+				handleError(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// todo: handle error
+			body, _ := ioutil.ReadAll(resp.Body)
+			if resp.StatusCode != http.StatusOK {
+				http.Error(w,  string(body), resp.StatusCode)
+				return
+			}
+
+			w.Write(body)
+		}
 }
 
 func createUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		url := trackerEndpoint + fmt.Sprintf(userFormatString, userID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("POST", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }
 
 func updateUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		url := trackerEndpoint + fmt.Sprintf(userFormatString, userID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("PUT", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }
 
 func deleteUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// todo:
-		w.WriteHeader(http.StatusNotImplemented)
+		vars := mux.Vars(r)
+		userID := vars["userid"]
+		url := trackerEndpoint + fmt.Sprintf(userFormatString, userID)
+
+		client := &http.Client{}
+		req, _ := http.NewRequest("DELETE", url, r.Body)
+
+		resp, err := client.Do(req)
+
+		if err != nil {
+			handleError(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// todo: handle error
+		body, _ := ioutil.ReadAll(resp.Body)
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w,  string(body), resp.StatusCode)
+			return
+		}
+
+		w.Write(body)
 	}
 }
 

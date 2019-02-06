@@ -130,6 +130,34 @@ func TestMemoryStorage_GetAllEntries(t *testing.T) {
 	}
 }
 
+func TestMemoryStorage_DeleteEntry(t *testing.T) {
+
+	s := newTestMemoryStorage()
+
+	found, err := s.DeleteEntry("1", "a");
+
+	if (err != nil) {
+		t.Error(err.Error())
+	}
+	if (!found) {
+		t.Error("Did not find entry {1,a} to delete")
+	}
+}
+
+func TestMemoryStorage_DeleteUser(t *testing.T) {
+
+	s := newTestMemoryStorage()
+
+	found, err := s.DeleteUser("1");
+
+	if (err != nil) {
+		t.Error(err.Error())
+	}
+	if (!found) {
+		t.Error("Did not find entry {1,a} to delete")
+	}
+}
+
 func newTestMemoryStorage() (s* MemoryStorage) {
 
 	duration, _ := time.ParseDuration("1h")

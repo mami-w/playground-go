@@ -60,6 +60,16 @@ func (s* MemoryStorage) GetUser(id string) (u *trackerdata.User, found bool, err
 	return &user, found, nil
 }
 
+func (s* MemoryStorage) DeleteUser(id string) (found bool, err error) {
+
+	_, found = s.users[id]
+
+	delete(s.users, id)
+	delete(s.entries, id)
+
+	return found, err
+}
+
 func (s* MemoryStorage) GetAllUsers() (users []trackerdata.User, err error) {
 
 	err = nil
@@ -114,6 +124,24 @@ func (s* MemoryStorage) GetEntry(userID string, id string) (e *trackerdata.Entry
 	entry, found := entries[id]
 
 	return &entry, found, err
+}
+
+func (s* MemoryStorage) DeleteEntry(userID string, id string) (found bool, err error) {
+
+	if _, found := s.users[userID]; !found {
+		err = NewError(fmt.Sprintf("User %v does not exist", userID))
+		return found, err
+	}
+
+	entries, found := s.entries[userID];
+	if  !found {
+		return found, nil
+	}
+
+	_, found = entries[id]
+	delete(entries, id)
+
+	return found, nil
 }
 
 func (s* MemoryStorage) GetAllEntries(userID string) (entries []trackerdata.Entry, err error) {

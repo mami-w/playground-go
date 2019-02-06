@@ -35,11 +35,6 @@ func UserHandler(storage trackerdata.Storage) func (w http.ResponseWriter, r *ht
  		entry := matches[2]
 		entryID = matches[3]
 
-		if userID == "" {
-			http.Error(w, "No user id specified", http.StatusBadRequest)
-			return
-		}
-
 		if entry == "" && entryID != "" {
 			http.Error(w, "Invalid request format", http.StatusBadRequest)
 			return
@@ -71,11 +66,33 @@ func handleGet(storage trackerdata.Storage, w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if entryID == "" {
+	if userID == "" {
+		handleGetAllUsers(storage, w, r)
+	} else if entryID == "" {
 		handleGetAllEntries(storage, w, r, userID)
 	} else {
 		handleGetEntry(storage, w, r, userID, entryID)
 	}
+}
+
+func handleGetAllUsers(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request) {
+
+	var users, err = storage.GetAllUsers();
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	body, err := json.Marshal(users)
+
+	if err != nil {
+		logger.Get().Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_, err = w.Write(body)
 }
 
 func handleGetAllEntries(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string) {
@@ -121,6 +138,7 @@ func handleGetEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_, err = w.Write(body)
 }
+
 func handlePut(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
 	if entryID == "" {
@@ -308,6 +326,16 @@ func createLocationURL(r *http.Request, userID string, entryID string) string {
 
 func handleDelete(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
+	if entryID == "" {
+		handleDeleteUser(storage, w, r, userID)
+		return;
+	}
+
+	handleDeleteEntry(storage, w, r, userID, entryID);
+}
+
+func handleDeleteUser(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string) {
+
 	if userID == "" {
 		http.Error(w, "no user specified", http.StatusNotFound)
 		return
@@ -325,9 +353,16 @@ func handleDelete(storage trackerdata.Storage, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// todo
+	// todo!!!
 
-	w.WriteHeader(http.StatusNoContent)
+	//w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+func handleDeleteEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+
+	// todo
+	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // newUUID generates a random UUID according to RFC 4122

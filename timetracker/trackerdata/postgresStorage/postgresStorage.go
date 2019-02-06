@@ -65,6 +65,20 @@ ON CONFLICT (id)
 DO UPDATE SET entrytype = EXCLUDED.entrytype, starttime = EXCLUDED.starttime, duration = EXCLUDED.duration;
 `
 
+	deleteUserSql = `
+DELETE FROM data.users
+WHERE id = $1
+`
+
+	deleteAllEntriesSql = `
+DELETE FROM data.entries
+WHERE userid = $1
+`
+
+	deleteEntrySql = `
+DELETE FROM data.entries
+WHERE id = $1 AND userid = $2
+`
 	)
 
 func NewPostgresStorage(endpoint string, user string, pwd string) (storage *PostgresStorage, err error) {
@@ -124,6 +138,57 @@ func (storage *PostgresStorage) GetUser(id string) (user *trackerdata.User, foun
 	user = &trackerdata.User{ ID:userID }
 
 	return user, true, nil
+}
+
+func (storage *PostgresStorage) DeleteUser(id string) (success bool, err error) {
+
+	db, err := sql.Open(driverName, storage.dnsStr)
+
+	defer db.Close()
+	defer func() {
+		if err != nil {
+			logger.Get().Println(err.Error())
+		}
+	}()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	{
+		stmt, err := tx.Prepare(deleteAllEntriesSql)
+		if err != nil {
+			tx.Rollback()
+			return false, err
+		}
+		defer stmt.Close()
+
+		if _, err := stmt.Exec(id); err != nil {
+			tx.Rollback() // return an error too, we may want to wrap them
+			return false, err
+		}
+	}
+
+	{
+		stmt, err := tx.Prepare(deleteUserSql)
+		if err != nil {
+			tx.Rollback()
+			return false, err
+		}
+		defer stmt.Close()
+
+		if _, err := stmt.Exec(id); err != nil {
+			tx.Rollback() // return an error too, we may want to wrap them
+			return false, err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (storage *PostgresStorage) GetAllUsers() (users []trackerdata.User, err error) {
@@ -215,6 +280,30 @@ func (storage *PostgresStorage) GetEntry(userID string, id string) (*trackerdata
 
 }
 
+func (storage *PostgresStorage) DeleteEntry(userID string, id string) (success bool, err error) {
+
+	db, err := sql.Open(driverName, storage.dnsStr)
+
+	defer db.Close()
+	defer func() {
+		if err != nil {
+			logger.Get().Println(err.Error())
+		}
+	}()
+
+	var entrycount int
+	err = db.QueryRow(deleteEntrySql, id, userID).Scan(&entrycount)
+
+	switch {
+	case err == sql.ErrNoRows:
+		return false, nil
+	case err != nil:
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (storage *PostgresStorage) GetAllEntries(userID string) (entries []trackerdata.Entry, err error) {
 
 	db, err := sql.Open(driverName, storage.dnsStr)
@@ -270,3 +359,44 @@ RETURNING id`
   id := 0
   err = db.QueryRow(sqlStatement, 30, "jon@calhoun.io", "Jonathan", "Calhoun").Scan(&id)
   */
+
+
+  /*
+   tx, err := db.Begin()
+    if err != nil {
+        return err
+    }
+
+    {
+        stmt, err := tx.Prepare(`INSERT INTO table_1 (thing_1, whatever)
+                     VALUES($1,$2);`)
+        if err != nil {
+            tx.Rollback()
+            return err
+        }
+        defer stmt.Close()
+
+        if _, err := stmt.Exec(thing_1, whatever); err != nil {
+            tx.Rollback() // return an error too, we may want to wrap them
+            return err
+        }
+    }
+
+    {
+        stmt, err := tx.Prepare(`INSERT INTO table_2 (thing_2, whatever)
+                     VALUES($1, $2);`)
+        if err != nil {
+            tx.Rollback()
+            return err
+        }
+        defer stmt.Close()
+
+        if _, err := stmt.Exec(thing_2, whatever); err != nil {
+            tx.Rollback() // return an error too, we may want to wrap them
+            return err
+        }
+    }
+
+    return tx.Commit()
+}
+   */

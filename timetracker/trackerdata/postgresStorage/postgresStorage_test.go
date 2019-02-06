@@ -46,6 +46,18 @@ func TestPostgresStorage_SetUser(t *testing.T) {
 
 }
 
+func TestPostgresStorage_DeleteUser(t *testing.T) {
+
+	storage, _ := NewAWSStorage()
+	err := storage.TestSetUser("1")
+
+	_, err = storage.DeleteUser("1")
+
+	if err != nil {
+		t.Error(err.Error())
+	}
+}
+
 func TestPostgresStorage_GetAllUser(t *testing.T) {
 
 	storage,_ := NewAWSStorage()
@@ -104,6 +116,20 @@ func TestPostgresStorage_GetEntry(t *testing.T) {
 	}
 }
 
+func TestPostgresStorage_DeleteEntry(t *testing.T) {
+
+	storage,_ := NewAWSStorage()
+
+	storage.TestSetUser("1")
+	storage.TestSetEntry("abc", "1")
+
+	_, err := storage.DeleteEntry("1", "abc")
+
+	if err != nil {
+		t.Error(err.Error())
+	}
+}
+
 func TestPostgresStorage_GetAllEntries(t *testing.T) {
 
 	storage,_ := NewAWSStorage()
@@ -127,6 +153,20 @@ func TestPostgresStorage_GetAllEntries(t *testing.T) {
 		if !entryExists(entries, v) {
 			t.Error("could not find entry %v", v)
 		}
+	}
+}
+
+func TestPostgresStorage_DeleteAllEntries(t *testing.T) {
+
+	storage,_ := NewAWSStorage()
+
+	storage.TestSetUser("1")
+	storage.TestSetEntry("abc", "1")
+
+	_, err := storage.DeleteUser("1")
+
+	if err != nil {
+		t.Error(err.Error())
 	}
 }
 

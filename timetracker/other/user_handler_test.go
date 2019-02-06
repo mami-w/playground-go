@@ -2,6 +2,7 @@ package other
 
 import (
 	"github.com/mami-w/playground-go/timetracker/trackerdata"
+	"github.com/mami-w/playground-go/timetracker/trackerdata/memoryStorage"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -97,6 +98,16 @@ func TestAddUser1(t *testing.T) {
 	}
 }
 
+func TestDeleteUser(t *testing.T) {
+	getResponse := getResponseTestData(t)
+	rr := getResponse("DELETE", "/api/v1.0/timetracker/user/1", nil, t)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusNotFound)
+	}
+}
+
 func TestAddUserAndEntry(t *testing.T) {
 
 	jsonEntry := `{ "id":""}`
@@ -189,6 +200,7 @@ func TestDeleteEntry(t *testing.T) {
 	}
 }
 
+// todo: I don't think we implement this...
 func TestDeleteAllEntries(t *testing.T) {
 	getResponse := getResponseTestData(t)
 
@@ -221,7 +233,7 @@ func TestDeleteNonExistingEntry(t *testing.T) {
 
 func getResponseEmpty() func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
 
-	storage, _ := trackerdata.NewStorage()
+	storage, _ := memoryStorage.NewStorage()
 
 	return func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {
 		return getHttpResponse(method, url, body, storage, t)

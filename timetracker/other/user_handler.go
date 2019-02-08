@@ -56,6 +56,10 @@ func UserHandler(storage trackerdata.Storage) func (w http.ResponseWriter, r *ht
 
 func handleGet(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
+	if userID == "" {
+		handleGetAllUsers(storage, w, r)
+		return;
+	}
 	_, found, err := storage.GetUser(userID)
 	if !found {
 		http.NotFound(w, r)
@@ -66,9 +70,7 @@ func handleGet(storage trackerdata.Storage, w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if userID == "" {
-		handleGetAllUsers(storage, w, r)
-	} else if entryID == "" {
+	if entryID == "" {
 		handleGetAllEntries(storage, w, r, userID)
 	} else {
 		handleGetEntry(storage, w, r, userID, entryID)
@@ -181,12 +183,13 @@ func handleUpdateUser(storage trackerdata.Storage, w http.ResponseWriter, req *h
 	var user trackerdata.User
 	err = json.Unmarshal(reqbody, &user)
 	if err != nil {
-		http.Error(w, "Could not read request body json", http.StatusBadRequest)
+		e := fmt.Sprintf("Could not read json request body: %v, value: %v", err.Error(), string(reqbody))
+		http.Error(w, e, http.StatusBadRequest)
 		return
 	}
 
-	if user.ID != "" {
-		http.Error(w, "ID in the request body should be blank", http.StatusBadRequest)
+	if (user.ID != "") && (user.ID != userID) {
+		http.Error(w, "user id in the body does not match the request", http.StatusBadRequest)
 		return
 	}
 
@@ -208,7 +211,25 @@ func handleCreateUser(storage trackerdata.Storage, w http.ResponseWriter, req *h
 		return
 	}
 
+	reqbody, err := ioutil.ReadAll(req.Body)
+	req.Body.Close()
+	if err != nil {
+		http.Error(w, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
 	var user trackerdata.User
+	err = json.Unmarshal(reqbody, &user)
+	if err != nil {
+		e := fmt.Sprintf("Could not read json request body: %v, value: %v", err.Error(), string(reqbody))
+		http.Error(w, e, http.StatusBadRequest)
+		return
+	}
+
+	if (user.ID != "") && (user.ID != userID) {
+		http.Error(w, "user id in the body does not match the request", http.StatusBadRequest)
+		return
+	}
 
 	user.ID = userID
 
@@ -241,18 +262,22 @@ func handleUpdateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *ht
 	err = json.Unmarshal(reqbody, &entry)
 
 	if err != nil {
-		http.Error(w, "could not read json body", http.StatusBadRequest)
+		e := fmt.Sprintf("Could not read json request body: %v, value: %v", err.Error(), string(reqbody))
+		http.Error(w, e, http.StatusBadRequest)
 		return
 	}
 
-	if userID != entry.UserID {
-		http.Error(w, fmt.Sprintf("user IDs don't match, user: %v - entry: %v", userID, entry.UserID,), http.StatusBadRequest)
+	if (entry.UserID != "") && (userID != entry.UserID) {
+		http.Error(w, "User Ids do not match", http.StatusBadRequest)
 		return
 	}
-	if entryID != entry.ID {
-		http.Error(w, fmt.Sprintf("entry IDs don't match, entry: %v - ID: %v", entryID, entry.ID,), http.StatusBadRequest)
+	if (entryID != entry.ID) && (entry.ID != "") {
+		http.Error(w, "entry id's do not match", http.StatusBadRequest)
 		return
 	}
+
+	entry.UserID = userID;
+	entry.ID = entryID;
 
 	storage.SetEntry(entry)
 
@@ -283,24 +308,27 @@ func handleCreateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *ht
 	r.Body.Close()
 
 	entry := trackerdata.Entry{}
+
 	err = json.Unmarshal(reqbody, &entry)
 
 	if err != nil {
-		http.Error(w, "could not read json body", http.StatusBadRequest)
+		e := fmt.Sprintf("could not read json body: %v, %v", err.Error(), string(reqbody))
+		http.Error(w, e, http.StatusBadRequest)
 		return
 	}
 
-	if userID != entry.UserID {
-		http.Error(w, fmt.Sprintf("user IDs don't match, user: %v - entry: %v", userID, entry.UserID,), http.StatusBadRequest)
+	if (entry.UserID != "") && (userID != entry.UserID) {
+		http.Error(w, "User Ids do not match", http.StatusBadRequest)
 		return
 	}
-
-	if entry.ID != "" {
-		http.Error(w, "entry id for new entry must be blank", http.StatusBadRequest)
+	if (entryID != entry.ID) && (entry.ID != "") {
+		http.Error(w, "entry id's do not match", http.StatusBadRequest)
 		return
 	}
 
 	entry.ID = entryID
+	entry.UserID = userID
+
 	//entry.ID, _ = newUUID()
 
 	storage.SetEntry(entry)
@@ -336,10 +364,23 @@ func handleDelete(storage trackerdata.Storage, w http.ResponseWriter, r *http.Re
 
 func handleDeleteUser(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string) {
 
-	if userID == "" {
-		http.Error(w, "no user specified", http.StatusNotFound)
+	_, exists, _ := storage.GetUser(userID)
+	if !exists {
+		http.Error(w, "user not found", http.StatusNotFound)
 		return
 	}
+
+	_, err := storage.DeleteUser(userID)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return;
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleDeleteEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
 
 	_, exists, _ := storage.GetUser(userID)
 	if !exists {
@@ -347,22 +388,20 @@ func handleDeleteUser(storage trackerdata.Storage, w http.ResponseWriter, r *htt
 		return
 	}
 
-	entries, _ := storage.GetAllEntries(userID)
-	if len(entries) == 0 {
-		http.Error(w, "no entries for user found", http.StatusNotFound)
+	_, exists, _ = storage.GetEntry(userID, entryID)
+	if !exists {
+		http.Error(w, "entry not found", http.StatusNotFound)
 		return
 	}
 
-	// todo!!!
+	_, err := storage.DeleteEntry(userID, entryID)
 
-	//w.WriteHeader(http.StatusNoContent)
-	w.WriteHeader(http.StatusNotImplemented)
-}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-func handleDeleteEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
-
-	// todo
-	w.WriteHeader(http.StatusNotImplemented)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // newUUID generates a random UUID according to RFC 4122

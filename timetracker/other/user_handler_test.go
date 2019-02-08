@@ -102,9 +102,9 @@ func TestDeleteUser(t *testing.T) {
 	getResponse := getResponseTestData(t)
 	rr := getResponse("DELETE", "/api/v1.0/timetracker/user/1", nil, t)
 
-	if status := rr.Code; status != http.StatusOK {
+	if status := rr.Code; status != http.StatusNoContent {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusNotFound)
+			status, http.StatusNoContent)
 	}
 }
 
@@ -229,6 +229,10 @@ func TestDeleteNonExistingEntry(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusNotFound)
 	}
+}
+
+func TestPlayground(t *testing.T) {
+	//Test1()
 }
 
 func getResponseEmpty() func (method string, url string, body io.Reader, t *testing.T) *httptest.ResponseRecorder {

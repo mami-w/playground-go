@@ -56,6 +56,15 @@ func TestPostgresStorage_DeleteUser(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+
+	users, err := storage.GetAllUsers();
+
+	for _, user := range users {
+		if user.ID == "1" {
+			t.Error("user 1 not deleted")
+		}
+	}
+
 }
 
 func TestPostgresStorage_GetAllUser(t *testing.T) {

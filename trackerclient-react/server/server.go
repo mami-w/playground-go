@@ -3,13 +3,13 @@ package server
 import (
 	"flag"
 	"github.com/gorilla/mux"
-	"github.com/mami-w/playground-go/timetracker/logger"
 	"log"
 	"net/http"
 )
 
 const (
-	defaultAddress = "http://ec2-18-217-168-85.us-east-2.compute.amazonaws.com"
+	//defaultAddress = "http://ec2-18-217-168-85.us-east-2.compute.amazonaws.com"
+	defaultAddress = "http://localhost:8000"
 )
 
 func NewServer() (router *mux.Router){
@@ -43,17 +43,19 @@ func initRoutes(router *mux.Router) {
 
 func getTrackerEndpoint() (trackerEndpoint string, err error) {
 
-	endpointFlag := flag.String("endpoint", "", "endpoint for ")
+	endpointFlag := flag.String("endpoint", "", "endpoint for tracker data")
 
 	flag.Parse()
 
 	if flag.NFlag() == 0 {
+		log.Println("using default entpoint")
 		return defaultAddress, nil
 	}
 
 	trackerEndpoint = *endpointFlag
 
-	logger.Get().Printf("endpoint - %v", trackerEndpoint)
+//	logger.Get().Printf("endpoint - %v", trackerEndpoint)
+	log.Printf("endpoint - %v", trackerEndpoint)
 	return trackerEndpoint, nil
 }
 

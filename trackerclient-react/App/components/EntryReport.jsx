@@ -30,7 +30,7 @@ export default class EntryReport extends React.Component {
         return (
             <div className={entryClassName} onClick={this.props.selectEntry}>
                 <div id="entry-id">{row.id}</div>
-                <div id="entry-userId">{row.userID}</div>
+                <div id="entry-userId">{row.userid}</div>
                 <div id="entry-entryType">{row.entryType}</div>
                 <div id="entry-startTime">{row.startTime}</div>
                 <div id="entry-length">{duration}</div>
@@ -42,9 +42,9 @@ export default class EntryReport extends React.Component {
 
     renderEdit = (row, duration) => {
         return (
-            <form className="entry" onSubmit={this.submitEntry.bind(this, row.id, row.userID)}>
+            <form className="entry" onSubmit={this.submitEntry.bind(this, row.id, row.userid)}>
                 <div id="entry-id">{row.id}</div>
-                <div id="entry-userId">{row.userID}</div>
+                <div id="entry-userId">{row.userid}</div>
                 <div>
                     <input type="text" name="entryType" defaultValue={row.entryType}/>
                 </div>
@@ -52,7 +52,7 @@ export default class EntryReport extends React.Component {
                     <input type="datetime-local" name="startTime" defaultValue={row.startTime}/>
                 </div>
                 <div>
-                    <input type="text" name="length" defaultValue={duration}/>
+                    <input type="text" name="duration" defaultValue={duration}/>
                 </div>
                 <button type="submit" className="submit-entry">Submit</button>
                 <button type="button" className="cancel-entry" onClick={this.props.cancelEditMode}>Cancel</button>
@@ -67,16 +67,16 @@ export default class EntryReport extends React.Component {
         // todo: translate these into strings
         var entryType = e.target.elements.entryType.value;
         var startTime = e.target.elements.startTime.value;
-        var entryLength = e.target.elements.length.value;
-
-        entryLength = entryLength * 60 * 1000000000;
+        var entryLength = e.target.elements.duration.value;
+        var duration = parseInt(entryLength, 10);
+        duration = duration * 60 * 1000000000;
 
         const entry = {
             id: entryId,
-            userID : userId,
+            userid : userId,
             entryType : entryType,
             startTime : startTime, // translate
-            length: entryLength
+            length: duration
         }
 
         this.props.finishUpdateEntry(entry)

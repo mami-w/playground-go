@@ -78,7 +78,7 @@ export default class Entries extends React.Component {
                                 <li key={entry.id}>
                                     <EntryReport
                                         entry={entry}
-                                        deleteEntry={this.deleteEntry.bind(this, entry.id, selectedEntry)}
+                                        deleteEntry={this.deleteEntry.bind(this, entry.id, entry.userid)}
                                         finishUpdateEntry={this.finishUpdateEntry.bind(this, entry.id)}
                                         selectEntry={this.selectEntry.bind(this, entry.id)}
                                         setEditEntry={this.setEditEntry.bind(this, entry.id)}
@@ -132,11 +132,16 @@ export default class Entries extends React.Component {
         if (selectedUser == null) {
             return;
         }
-        //const url = `/api/v1.0/tracker/user/${selectedUser}`; // todo: create correct url
-        const url = "/api/v1.0/tracker/user/1"
+        const url = `/api/v1.0/tracker/user/${selectedUser}`; // todo: create correct url
+        //const url = "/api/v1.0/tracker/user/1"
         fetch(url)
             .then(
-                res => res.json(),
+                (res) => {
+                        if (res.status == 404) {
+                            return [];
+                        }
+                        return res.json();
+                    },
                 (error) => {
                     this.setState({loading: false, error: error})
                 }
@@ -173,7 +178,7 @@ export default class Entries extends React.Component {
     }
 
     sendPostEntry(entry) {
-        const url = `/api/v1.0/tracker/user/${entry.userID}/entries/${entry.id}`;
+        const url = `/api/v1.0/tracker/user/${entry.userid}/entry/${entry.id}`;
         fetch(url, {
             method: 'POST',
             headers: {
@@ -189,11 +194,12 @@ export default class Entries extends React.Component {
                             editMode : entryEditMode.none
                         },
                         () => {
-                            const key = `entries${entry.userID}`;
+                            const key = `entries${entry.userid}`;
                             sessionStorage.setItem(key, JSON.stringify(this.state.entries))
                         }
                     );
-                }
+                },
+                (error) => { this.setState({error:error})}
             )
             .catch(
             (error) => { this.setState({error: error})}
@@ -201,7 +207,8 @@ export default class Entries extends React.Component {
     }
 
     sendPutEntry(entry) {
-        const url = `/api/v1.0/tracker/user/${entry.userId}/entries/${entry.id}`;
+        const updatedEntry = entry;
+        const url = `/api/v1.0/tracker/user/${entry.userid}/entry/${entry.id}`;
         fetch(url, {
             method: 'PUT',
             headers: {
@@ -216,25 +223,25 @@ export default class Entries extends React.Component {
                 editMode : entryEditMode.none
             },
             () => {
-                const key = `entries${entry.userID}`;
+                const key = `entries${entry.userid}`;
                 sessionStorage.setItem(key, JSON.stringify(this.state.entries))
             }
             );
-        })
+        },(error) => { this.setState({error:error})}
+            )
         .catch(
             (error) => { this.setState({error: error})}
         );
     }
 
-    sendDeleteEntry(userId, id) {
-        const url = `/api/v1.0/tracker/user/${userId}/entries/${id}`;
+    sendDeleteEntry(id, userId) {
+        const url = `/api/v1.0/tracker/user/${userId}/entry/${id}`;
         fetch(url, {
-            method: 'PUT',
+            method: 'DELETE',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(entry)
+            }
         })
             .then(() => {
                 this.setState({
@@ -244,7 +251,8 @@ export default class Entries extends React.Component {
                         const key = `entries${userId}`;
                         sessionStorage.setItem(key, JSON.stringify(this.state.entries))
                     });
-            })
+            }, (error) => { this.setState({ error: error })}
+            )
             .catch(
                 (error) => { this.setState({error: error})}
             );
@@ -291,10 +299,10 @@ export default class Entries extends React.Component {
         const now = (new Date()).toJSON();
         var entry = {
             id: id,
-            userID: userId,
+            userid: userId,
             entryType: "1",
             startTime: now,
-            length: "3600000000000"
+            length: 3600000000000
         }
 
         this.sendPostEntry(entry);
@@ -304,7 +312,7 @@ export default class Entries extends React.Component {
         this.sendDeleteEntry(id, userId);
     }
 
-    finishUpdateEntry = (updatedEntry) => {
+    finishUpdateEntry = (id, updatedEntry) => {
         this.sendPutEntry(updatedEntry);
     }
 }

@@ -91,7 +91,8 @@ func createEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 
 		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
-		if resp.StatusCode != http.StatusOK {
+
+		if resp.StatusCode != http.StatusCreated {
 			http.Error(w,  string(body), resp.StatusCode)
 			return
 		}

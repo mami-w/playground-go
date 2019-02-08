@@ -6,13 +6,6 @@ export default class UserReport extends React.Component {
         super(props);
     }
 
-    componentWillMount() {
-        console.log("UserReport will mount")
-    }
-    componentWillUnmount() {
-        console.log("UserReport will unmount")
-    }
-
     render() {
         console.log("UserReport render")
         const row = this.props.user;
@@ -29,7 +22,6 @@ export default class UserReport extends React.Component {
         else {
             return this.renderNormal(row, userClassName, editUserClassName, deleteUserClassName)
         }
-
     }
 
     renderNormal = (row, userClassName, editUserClassName, deleteUserClassName) => {

@@ -103,7 +103,7 @@ export default class Users extends React.Component {
     }
 
     loadUsers() {
-        const url = "/api/v1.0/tracker/user/1"; // todo: create correct url
+        const url = "/api/v1.0/tracker/user";
         fetch(url)
             .then(
                 res => res.json(),
@@ -164,7 +164,8 @@ export default class Users extends React.Component {
     }
 
     sendPutUser(user) {
-        const url = `/api/v1.0/tracker/user/${user.id}`;
+        const id = user.id;
+        const url = `/api/v1.0/tracker/user/${id}`;
         fetch(url, {
             method: 'PUT',
             headers: {

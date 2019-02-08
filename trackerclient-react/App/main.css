@@ -1,3 +1,10 @@
+/*
+TODO:
+- make the edit fields as wide as the text fields
+- get rid of the bullet points
+ */
+
+
 body {
     background: whitesmoke;
     font-family: sans-serif;
@@ -27,21 +34,21 @@ body {
 .user-header {
     display: grid;
     width: 100%;
-    grid-template-columns: 150px 150px 70px 50px;
+    grid-template-columns: 270px 150px 70px 70px;
     background-color:#f0f8ff;
     font-size:small;
 }
 .user {
     display: grid;
     width: 100%;
-    grid-template-columns: 150px 150px 70px 50px;
+    grid-template-columns: 270px 150px 70px 70px;
     background-color:#f0fff0;
     font-size:small;
 }
 .user-select {
     display: grid;
     width: 100%;
-    grid-template-columns: 150px 150px 70px 50px;
+    grid-template-columns: 270px 150px 70px 70px;
     background-color:#f0fff0;
     font-size:small;
 }
@@ -77,21 +84,21 @@ body {
 .entry-header {
     display: grid;
     width: 100%;
-    grid-template-columns: 100px 100px 50px 150px 150px 70px 50px;
+    grid-template-columns: 270px 270px 50px 200px 100px 70px 70px;
     background-color:#f0f8ff;
     font-size:small;
 }
 .entry {
     display: grid;
     width: 100%;
-    grid-template-columns: 100px 100px 50px 150px 150px 70px 50px;
+    grid-template-columns: 270px 270px 50px 200px 100px 70px 70px;
     background-color:#f0fff0;
     font-size:small;
 }
 .entry-select {
     display: grid;
     width: 100%;
-    grid-template-columns: 100px 100px 50px 150px 150px 70px 50px;
+    grid-template-columns: 270px 270px 50px 200px 100px 70px 70px;
     background-color:#f0fff0;
     font-size:small;
 }

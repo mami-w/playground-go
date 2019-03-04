@@ -1,3 +1,4 @@
+// unused
 import React, { Component } from 'react';
 
 const counter = (state = { value: 0 }, action) => {

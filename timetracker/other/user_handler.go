@@ -151,16 +151,6 @@ func handlePut(storage trackerdata.Storage, w http.ResponseWriter, r *http.Reque
 	handleUpdateEntry(storage, w, r, userID, entryID)
 }
 
-func handlePost(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
-
-	if entryID == "" {
-		handleCreateUser(storage, w, r, userID)
-		return
-	}
-
-	handleCreateEntry(storage, w, r, userID, entryID)
-}
-
 func handleUpdateUser(storage trackerdata.Storage, w http.ResponseWriter, req *http.Request, userID string) {
 
 	if userID == "" {
@@ -197,44 +187,6 @@ func handleUpdateUser(storage trackerdata.Storage, w http.ResponseWriter, req *h
 
 	storage.SetUser(user)
 	w.WriteHeader(http.StatusOK)
-}
-
-func handleCreateUser(storage trackerdata.Storage, w http.ResponseWriter, req *http.Request, userID string) {
-
-	if userID == "" {
-		http.Error(w, "User ID not specified", http.StatusBadRequest)
-		return
-	}
-
-	if _, found, _ := storage.GetUser(userID); found {
-		http.Error(w, "User with user ID already exists", http.StatusBadRequest)
-		return
-	}
-
-	reqbody, err := ioutil.ReadAll(req.Body)
-	req.Body.Close()
-	if err != nil {
-		http.Error(w, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	var user trackerdata.User
-	err = json.Unmarshal(reqbody, &user)
-	if err != nil {
-		e := fmt.Sprintf("Could not read json request body: %v, value: %v", err.Error(), string(reqbody))
-		http.Error(w, e, http.StatusBadRequest)
-		return
-	}
-
-	if (user.ID != "") && (user.ID != userID) {
-		http.Error(w, "user id in the body does not match the request", http.StatusBadRequest)
-		return
-	}
-
-	user.ID = userID
-
-	storage.SetUser(user)
-	w.WriteHeader(http.StatusCreated)
 }
 
 func handleUpdateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
@@ -290,6 +242,54 @@ func handleUpdateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *ht
 		http.Error(w, "could not write json body", http.StatusInternalServerError)
 	}
 	w.Write(body)
+}
+
+func handlePost(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {
+
+	if entryID == "" {
+		handleCreateUser(storage, w, r, userID)
+		return
+	}
+
+	handleCreateEntry(storage, w, r, userID, entryID)
+}
+
+func handleCreateUser(storage trackerdata.Storage, w http.ResponseWriter, req *http.Request, userID string) {
+
+	if userID == "" {
+		http.Error(w, "User ID not specified", http.StatusBadRequest)
+		return
+	}
+
+	if _, found, _ := storage.GetUser(userID); found {
+		http.Error(w, "User with user ID already exists", http.StatusBadRequest)
+		return
+	}
+
+	reqbody, err := ioutil.ReadAll(req.Body)
+	req.Body.Close()
+	if err != nil {
+		http.Error(w, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	var user trackerdata.User
+	err = json.Unmarshal(reqbody, &user)
+	if err != nil {
+		e := fmt.Sprintf("Could not read json request body: %v, value: %v", err.Error(), string(reqbody))
+		http.Error(w, e, http.StatusBadRequest)
+		return
+	}
+
+	if (user.ID != "") && (user.ID != userID) {
+		http.Error(w, "user id in the body does not match the request", http.StatusBadRequest)
+		return
+	}
+
+	user.ID = userID
+
+	storage.SetUser(user)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func handleCreateEntry(storage trackerdata.Storage, w http.ResponseWriter, r *http.Request, userID string, entryID string) {

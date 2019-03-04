@@ -12,7 +12,7 @@ const (
 	entryFormatString = "/api/v1.0/timetracker/user/%s/entry/%s"
 )
 
-func getAllEntriesHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func getAllEntriesHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -29,10 +29,9 @@ func getAllEntriesHandler(trackerEndpoint string) func(w http.ResponseWriter, r 
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 
@@ -40,7 +39,7 @@ func getAllEntriesHandler(trackerEndpoint string) func(w http.ResponseWriter, r 
 	}
 }
 
-func getEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func getEntryHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -59,10 +58,9 @@ func getEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 
@@ -70,7 +68,7 @@ func getEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http
 	}
 }
 
-func createEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func createEntryHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -89,11 +87,10 @@ func createEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 
 		if resp.StatusCode != http.StatusCreated {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 
@@ -101,7 +98,7 @@ func createEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 	}
 }
 
-func updateEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func updateEntryHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -120,10 +117,9 @@ func updateEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 
@@ -131,7 +127,7 @@ func updateEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 	}
 }
 
-func deleteEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func deleteEntryHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -150,10 +146,9 @@ func deleteEntryHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 

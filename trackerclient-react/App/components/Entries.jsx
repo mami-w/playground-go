@@ -2,6 +2,7 @@ import React from 'react'
 import EntryReport from './EntryReport'
 import uuid from 'node-uuid'
 import { entryEditMode } from './Datastructures'
+import { AddJwtToken } from './HttpHelpers'
 
 export default class Entries extends React.Component {
     constructor(props) {
@@ -27,15 +28,10 @@ export default class Entries extends React.Component {
         }
     }
 
-    componentWillUnmount() {
-        console.log("Entries will unmount")
-    }
-
     render() {
         console.log("Entries will render")
 
         const entries = this.state.entries;
-
         const error = this.state.error;
         const loading = this.state.loading;
         const selectedUser = this.props.selectedUser;
@@ -43,7 +39,7 @@ export default class Entries extends React.Component {
         if (error) {
             return <div>Error: {error.message}</div>;
         } else if (selectedUser == null) {
-            return <div>No user selected...</div>
+            return <div>No user selected.</div>
         }
         else if (loading) {
             return <div>Loading...</div>;
@@ -52,6 +48,7 @@ export default class Entries extends React.Component {
 
             const editMode = this.state.editMode;
             const selectedEntry = this.state.selectedEntry;
+
             return (
                 <div>
                     <div>
@@ -128,18 +125,28 @@ export default class Entries extends React.Component {
     }
 
     loadEntries() {
+
+        //if (!this.props.isAuthorized) { return; }
+
         const selectedUser = this.props.selectedUser;
         if (selectedUser == null) {
             return;
         }
-        const url = `/api/v1.0/tracker/user/${selectedUser}`; // todo: create correct url
-        //const url = "/api/v1.0/tracker/user/1"
-        fetch(url)
+        const url = `/api/v1.0/tracker/user/${selectedUser}`;
+        let options = {};
+        AddJwtToken.call(options);
+
+        fetch(url, options)
             .then(
                 (res) => {
                         if (res.status == 404) {
                             return [];
                         }
+                    if (res.status == 401) {
+                        this.props.setUnauthorized();
+                        return [];
+                    }
+                        if (!res.ok) { throw Error(res.statusText) }
                         return res.json();
                     },
                 (error) => {
@@ -179,16 +186,20 @@ export default class Entries extends React.Component {
 
     sendPostEntry(entry) {
         const url = `/api/v1.0/tracker/user/${entry.userid}/entry/${entry.id}`;
-        fetch(url, {
+        let options = {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(entry)
-        })
+        };
+        AddJwtToken.call(options);
+
+        fetch(url, options)
             .then(
-                () =>  {
+                (res) =>  {
+                    if (!res.ok) { throw Error(res.statusText) }
                     this.setState({
                             entries: this.state.entries.concat([entry]),
                             editMode : entryEditMode.none
@@ -209,15 +220,19 @@ export default class Entries extends React.Component {
     sendPutEntry(entry) {
         const updatedEntry = entry;
         const url = `/api/v1.0/tracker/user/${entry.userid}/entry/${entry.id}`;
-        fetch(url, {
+        let options = {
             method: 'PUT',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(entry)
-        })
-        .then(() => {
+        };
+        AddJwtToken.call(options);
+
+        fetch(url, options)
+        .then((res) => {
+                if (!res.ok) { throw Error(res.statusText) }
             this.setState({
                 entries: this.state.entries.filter(entry => entry.id !== updatedEntry.id).concat([updatedEntry]),
                 editMode : entryEditMode.none
@@ -236,14 +251,18 @@ export default class Entries extends React.Component {
 
     sendDeleteEntry(id, userId) {
         const url = `/api/v1.0/tracker/user/${userId}/entry/${id}`;
-        fetch(url, {
+        let options = {
             method: 'DELETE',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             }
-        })
-            .then(() => {
+        };
+        AddJwtToken.call(options);
+
+        fetch(url, options)
+            .then((res) => {
+                    if (!res.ok) { throw Error(res.statusText) }
                 this.setState({
                         entries: this.state.entries.filter(entry => entry.id !== id),
                     },

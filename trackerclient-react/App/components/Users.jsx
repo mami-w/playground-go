@@ -2,6 +2,7 @@ import React from 'react'
 import UserReport from './UserReport'
 import uuid from 'node-uuid'
 import { userEditMode } from './Datastructures'
+import { AddJwtToken } from './HttpHelpers'
 
 export default class Users extends React.Component {
     constructor(props) {
@@ -103,10 +104,29 @@ export default class Users extends React.Component {
     }
 
     loadUsers() {
+
+        //if (!this.props.isAuthorized) { return; }
+
         const url = "/api/v1.0/tracker/user";
-        fetch(url)
+
+        let options = {};
+        AddJwtToken.call(options);
+
+        fetch(url, options)
             .then(
-                res => res.json(),
+                (res) => {
+                    if (res.status == 404) {
+                        return [];
+                    }
+                    if (res.status == 401) {
+                        this.props.setUnauthorized();
+                        return [];
+                    }
+                    if (!res.ok) {
+                        throw Error(res.statusText);
+                    }
+                    return res.json();
+                },
                 (error) => {
                     this.setState({loading: false, error: error})
                 }
@@ -139,16 +159,21 @@ export default class Users extends React.Component {
     }
 
     sendPostUser(user) {
+
         const url = `/api/v1.0/tracker/user/${user.id}`;
-        fetch(url, {
+        let options = {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(user)
-            })
-            .then(() => {
+        };
+        AddJwtToken.call(options);
+
+        fetch(url, options)
+            .then((res) => {
+                if (!res.ok) { throw Error(res.statusText) }
                 this.setState({
                         users: this.state.users.concat([user]),
                         editMode : userEditMode.none
@@ -166,15 +191,19 @@ export default class Users extends React.Component {
     sendPutUser(user) {
         const id = user.id;
         const url = `/api/v1.0/tracker/user/${id}`;
-        fetch(url, {
+        let options = {
             method: 'PUT',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(user)
-        })
-            .then(() => {
+        };
+        AddJwtToken.call(options);
+
+        fetch(url, options)
+            .then((res) => {
+                if (!res.ok) { throw Error(res.statusText) }
                 this.setState({
                         users: this.state.users.filter(user => user.id !== id).concat([updatedUser]),
                         editMode : userEditMode.none
@@ -191,15 +220,19 @@ export default class Users extends React.Component {
 
     sendDeleteUser(id) {
         const url = `/api/v1.0/tracker/user/${id}`;
-        fetch(url, {
+        let options = {
             method: 'DELETE',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(id)
-        })
-            .then(() => {
+        };
+        AddJwtToken.call(options);
+
+        fetch(url, options)
+            .then((res) => {
+                if (!res.ok) { throw Error(res.statusText) }
                 this.setState({
                         users: this.state.users.filter(user => user.id !== id),
                     })
@@ -227,9 +260,6 @@ export default class Users extends React.Component {
     }
 
     cancelEditMode = (e) => {
-        //e.preventDefault();
-        //e.stopPropagation();
-
         this.setState( {
             editMode : userEditMode.none
         })
@@ -242,7 +272,6 @@ export default class Users extends React.Component {
         var user = { id: id }
 
         this.sendPostUser(user)
-
     }
 
     deleteUser = (id, e) => {

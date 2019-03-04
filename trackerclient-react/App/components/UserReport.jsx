@@ -52,7 +52,7 @@ export default class UserReport extends React.Component {
 
         e.preventDefault();
 
-            // todo - add user names
+         // todo - add user names
         var newName = e.target.elements.userName.value
 
         const user = { id: userId }

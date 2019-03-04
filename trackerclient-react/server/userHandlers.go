@@ -12,7 +12,7 @@ const (
 	userFormatString = "/api/v1.0/timetracker/user/%s"
 )
 
-func getAllUsersHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func getAllUsersHandler(trackerEndpoint string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 
 			url := trackerEndpoint + fmt.Sprintf(userQueryString)
@@ -28,10 +28,9 @@ func getAllUsersHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 				return
 			}
 
-			// todo: handle error
 			body, _ := ioutil.ReadAll(resp.Body)
 			if resp.StatusCode != http.StatusOK {
-				http.Error(w,  string(body), resp.StatusCode)
+				http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 				return
 			}
 
@@ -39,7 +38,7 @@ func getAllUsersHandler(trackerEndpoint string) func(w http.ResponseWriter, r *h
 		}
 }
 
-func createUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func createUserHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -56,10 +55,9 @@ func createUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *ht
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 
@@ -67,7 +65,7 @@ func createUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *ht
 	}
 }
 
-func updateUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func updateUserHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -84,10 +82,9 @@ func updateUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *ht
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 
@@ -95,7 +92,7 @@ func updateUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *ht
 	}
 }
 
-func deleteUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *http.Request) {
+func deleteUserHandler(trackerEndpoint string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID := vars["userid"]
@@ -112,10 +109,9 @@ func deleteUserHandler(trackerEndpoint string) func(w http.ResponseWriter, r *ht
 			return
 		}
 
-		// todo: handle error
 		body, _ := ioutil.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w,  string(body), resp.StatusCode)
+			http.Error(w, reportRemoteError(string(body)), resp.StatusCode)
 			return
 		}
 

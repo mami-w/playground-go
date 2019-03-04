@@ -1,39 +1,68 @@
 import React from 'react'
 import Users from './Users'
 import Entries from './Entries'
+import Auth from './Auth';
 
 export default class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            selectedUser: null
+            selectedUser: null,
+            isAuthorized: false
         };
-        console.log("app constructor")
+        this.auth = new Auth();
     }
 
-    componentWillMount() {
-        console.log("app will mount")
-    }
-
-    componentWillUnmount() {
-        console.log("app will unmount")
+    componentDidMount() {
+        this.auth.parseHash();
+        const idToken = localStorage.getItem('id_token');
+        if (idToken) { this.setAuthorized(true) } else { this.setAuthorized(false)};
     }
 
     render() {
         const selectedUser = this.state.selectedUser;
 
-         return (
-             <div>
-                 <Users selectUser={this.selectUser} selectedUser={selectedUser}/>
-                 <Entries selectedUser={selectedUser}/>
-             </div>
-         )
+        if (!this.state.isAuthorized) {
+            return (
+                <div>
+                    <button onClick={this.login}>Login</button>
+                </div>
+            );
+        }
+        else {
+            return (
+                <div>
+                    <button onClick={this.logout}>Logout</button>
+                    <Users selectUser={this.selectUser} selectedUser={selectedUser} setUnauthorized={this.setUnauthorized}/>
+                    <Entries selectedUser={selectedUser} setUnauthorized={this.setUnauthorized}/>
+                </div>
+            );
+        }
     }
 
     selectUser = (userId) => {
-        console.log("called selectUser")
         this.setState( {
             selectedUser : userId
         })
+    }
+
+    setUnauthorized = () => {
+         this.setAuthorized(false)
+    }
+
+    // example of how to do login from client
+    login = () => {
+         this.auth.login();
+    }
+
+    logout = () => {
+         this.auth.logout();
+    }
+
+    // Set user login state
+    setAuthorized(value){
+        if(this.state.isAuthorized != value){
+            this.setState({ isAuthorized: value });
+        }
     }
 }
